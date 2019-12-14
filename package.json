@@ -2,6 +2,7 @@
   "dependencies": {
     "@types/lodash": "^4.14.149",
     "@types/node": "^12.12.17",
+    "gcd": "^0.0.1",
     "lodash": "^4.17.15",
     "lodash.combinations": "^18.9.19",
     "ts-node": "^8.5.4",

@@ -1,5 +1,7 @@
 require('lodash.combinations');
 import * as _ from 'lodash';
+// @ts-ignore
+import * as gcd from 'gcd';
 
 const combinations: any = (_ as any).combinations;
 
@@ -58,7 +60,7 @@ const totalEnergy = (moons: MoonState[]) => {
   return total
 }
 
-const hashState = (moons: MoonState[]): string => moons.map(({ pos, vel }) => `${pos[0]}.${pos[1]}.${pos[2]}:${vel[0]}.${vel[1]}.${vel[2]}`).join('-')
+const hashStateVects = (moons: MoonState[], i: number) => moons.map(({ pos, vel }) => `${pos[i]}.${vel[i]}`).join('-')
 
 const tick = (moons: MoonState[]): MoonState[] => {
   const moonIndices = moons.map((_moon, i) => i);
@@ -107,26 +109,50 @@ console.log('TOTAL ENERGY PART 1:', energyAfterTicks(getInitialMoons(), 1000));
 
 // part 2
 
+const allNotUndefined = (repeatNums: any[]) => {
+  return repeatNums.filter(elm => elm !== undefined).length === repeatNums.length
+}
+
+const allEqual = (arr: number[]) => !arr.find(val => val !== arr[0]);
+const minIndex = (arr: number[]) => {
+  const minVal = Math.min.apply(Math, arr);
+  return arr.indexOf(minVal);
+}
+
+const findOverallRepeatInterval = (repeats: [number, number, number]) => {
+  const lcm1 = repeats[0] * repeats[1] /  gcd(repeats[0], repeats[1])
+  return lcm1 * repeats[2] / gcd(lcm1, repeats[2])
+}
+
 const ticksUntilRepeat = (initialState: MoonState[]) => {
   let moons = initialState;
-  const seenStates = new Set<string>();
-  seenStates.add(hashState(moons));
+  const seenStates: [{[hash: string]: number}, {[hash: string]: number}, {[hash: string]: number}] = [{},{},{}];
+  seenStates[0][hashStateVects(moons, 0)] = 0;
+  seenStates[1][hashStateVects(moons, 1)] = 0;
+  seenStates[2][hashStateVects(moons, 2)] = 0;
+  const repeatStepNum: [number|undefined, number|undefined, number|undefined] = [undefined, undefined, undefined] 
+
   let cnt = 0;
   while (true) {
     cnt += 1;
     moons = tick(moons)
-    const curState = hashState(moons);
-    if (seenStates.has(curState)) {
+    for (let i = 0; i < 3; i++) {
+      if (repeatStepNum[i]) continue;
+      const hashedState = hashStateVects(moons, i);
+      if (!seenStates[i][hashedState]) {
+        seenStates[i][hashedState] = cnt;
+      } else {
+        const firstSeen = seenStates[i][hashedState];
+        repeatStepNum[i] =  cnt - firstSeen
+      }
+    }
+    if (allNotUndefined(repeatStepNum)) {
       break;
     }
-    seenStates.add(curState);
-    if (cnt % 1000000 === 0) {
-      console.log('.')
-    }
   }
-  return seenStates.size
+  console.log(`Repeats!`, repeatStepNum)
+  return findOverallRepeatInterval(repeatStepNum)
 }
 
 console.log('TEST TICKS UNTIL REPEAT:', ticksUntilRepeat(getTestMoons()));
-// THIS DOESN"T WORK! RUNS OUT OF MEMORY
 console.log('TICKS UNTIL REPEAT PART 2:', ticksUntilRepeat(getInitialMoons()));
